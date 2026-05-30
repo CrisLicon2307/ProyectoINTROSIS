@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Archivos Históricos de la Computación</title>
+    <!-- Importamos una fuente estilo pixel/terminal de Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+    
+    <style>
+        /* --- VARIABLES DE COLOR Y TEMA --- */
+        :root {
+            --terminal-bg: #0d1117;
+            --terminal-green: #33ff00;
+            --terminal-dim: #1a8000;
+            --terminal-glow: 0 0 10px rgba(51, 255, 0, 0.7);
+            --scanline-color: rgba(18, 16, 16, 0.5);
+            --font-main: 'VT323', monospace;
+        }
+
+        /* --- RESET BÁSICO --- */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--terminal-bg);
+            color: var(--terminal-green);
+            font-family: var(--font-main);
+            font-size: 1.3rem;
+            line-height: 1.6;
+            overflow-x: hidden;
+            position: relative;
+            padding-bottom: 2rem;
+        }
+
+        /* --- EFECTO CRT / MONITOR ANTIGUO --- */
+        body::before {
+            content: " ";
+            display: block;
+            position: fixed;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            right: 0;
+            background: linear-gradient(
+                to bottom,
+                rgba(18, 16, 16, 0) 50%,
+                rgba(0, 0, 0, 0.25) 50%
+            );
+            background-size: 100% 4px;
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        @keyframes flicker {
+            0% { opacity: 0.97; }
+            5% { opacity: 0.95; }
+            10% { opacity: 0.9; }
+            15% { opacity: 0.95; }
+            20% { opacity: 0.99; }
+            50% { opacity: 0.95; }
+            80% { opacity: 0.9; }
+            100% { opacity: 0.97; }
+        }
+
+        main {
+            animation: flicker 0.15s infinite;
+            position: relative;
+            z-index: 5;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        /* --- TIPOGRAFÍA Y ELEMENTOS --- */
+        h1, h2, h3 {
+            text-transform: uppercase;
+            text-shadow: var(--terminal-glow);
+            margin-bottom: 1rem;
+        }
+
+        h1 {
+            font-size: 3rem;
+            border-bottom: 2px solid var(--terminal-green);
+            padding-bottom: 1rem;
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+
+        h2 {
+            font-size: 2.2rem;
+            margin-top: 3rem;
+            background-color: var(--terminal-dim);
+            color: #000;
+            padding: 0.2rem 1rem;
+            display: inline-block;
+        }
+
+        p {
+            margin-bottom: 1.5rem;
+            text-align: justify;
+        }
+
+        strong {
+            text-decoration: underline;
+        }
+
+        /* --- NAVEGACIÓN --- */
+        nav {
+            border: 1px solid var(--terminal-green);
+            padding: 1rem;
+            margin-bottom: 3rem;
+            text-align: center;
+        }
+
+        nav ul {
+            list-style: none;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 1.5rem;
+        }
+
+        nav a {
+            color: var(--terminal-green);
+            text-decoration: none;
+            border: 1px dashed var(--terminal-dim);
+            padding: 0.5rem 1rem;
+        }
+
+        nav a:hover {
+            background-color: var(--terminal-green);
+            color: var(--terminal-bg);
+        }
+
+        /* --- SECCIONES DE CONTENIDO --- */
+        .content-section {
+            border-left: 4px solid var(--terminal-green);
+            padding-left: 1.5rem;
+            margin-bottom: 4rem;
+        }
+
+        .cursor::after {
+            content: "█";
+            animation: blink 1s step-end infinite;
+        }
+
+        @keyframes blink {
+            50% { opacity: 0; }
+        }
+
+        /* --- ESTILOS DEL CHATBOT (TERMINAL INTERACTIVA) --- */
+        #chatbot-section {
+            margin-top: 5rem;
+            border: 2px solid var(--terminal-green);
+            box-shadow: 0 0 15px var(--terminal-dim);
+            background-color: rgba(0, 20, 0, 0.8);
+        }
+
+        .chat-header {
+            background-color: var(--terminal-green);
+            color: black;
+            padding: 0.5rem 1rem;
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .chat-window {
+            height: 350px;
+            overflow-y: auto;
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            scrollbar-width: thin;
+            scrollbar-color: var(--terminal-green) var(--terminal-bg);
+        }
+
+        /* Scrollbar personalizado para Webkit */
+        .chat-window::-webkit-scrollbar {
+            width: 8px;
+        }
+        .chat-window::-webkit-scrollbar-track {
+            background: var(--terminal-bg);
+        }
+        .chat-window::-webkit-scrollbar-thumb {
+            background-color: var(--terminal-dim);
+        }
+
+        .chat-msg {
+            margin-bottom: 0.5rem;
+            word-wrap: break-word;
+        }
+
+        .msg-system { color: var(--terminal-green); }
+        .msg-user { color: #fff; text-align: right; }
+        .msg-bot { color: var(--terminal-green); }
+        
+        .typing-cursor::after {
+            content: "█";
+            animation: blink 0.5s step-end infinite;
+        }
+
+        .chat-input-area {
+            padding: 1rem;
+            border-top: 1px solid var(--terminal-green);
+            display: flex;
+            gap: 1rem;
+            background: rgba(0,0,0,0.5);
+        }
+
+        #chat-input {
+            flex-grow: 1;
+            background: transparent;
+            border: none;
+            color: var(--terminal-green);
+            font-family: var(--font-main);
+            font-size: 1.3rem;
+            outline: none;
+        }
+
+        #send-btn {
+            background: var(--terminal-dim);
+            color: black;
+            border: 1px solid var(--terminal-green);
+            font-family: var(--font-main);
+            font-size: 1.2rem;
+            padding: 0.2rem 1.5rem;
+            cursor: pointer;
+            text-transform: uppercase;
+            box-shadow: var(--terminal-glow);
+        }
+
+        #send-btn:hover {
+            background: var(--terminal-green);
+        }
+
+        #send-btn:active {
+            transform: translateY(2px);
+        }
+
+        /* --- FOOTER --- */
+        footer {
+            border-top: 2px solid var(--terminal-green);
+            padding: 2rem;
+            text-align: center;
+            margin-top: 4rem;
+            font-size: 1rem;
+        }
+
+        .reference-links a {
+            display: block;
+            margin: 0.5rem 0;
+            font-size: 1rem;
+            opacity: 0.8;
+            color: var(--terminal-green);
+        }
+
+        .reference-links a:hover {
+            opacity: 1;
+        }
+
+        @media (max-width: 600px) {
+            h1 { font-size: 2.2rem; }
+            h2 { font-size: 1.8rem; width: 100%; }
+            main { padding: 1rem; }
+            nav ul { flex-direction: column; gap: 0.5rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <main>
+        <header>
+            <h1 class="cursor">SISTEMA HISTÓRICO v1.0</h1>
+            <p style="text-align: center; margin-bottom: 2rem;">
+                > Accediendo a los archivos de la computación...<br>
+                > Carga completada. Bienvenido, usuario.
+            </p>
+        </header>
+
+        <nav role="navigation" aria-label="Menú principal">
+            <ul>
+                <li><a href="#historia">./HISTORIA</a></li>
+                <li><a href="#arquitectura">./ARQUITECTURA</a></li>
+                <li><a href="#basedatos">./BASE_DE_DATOS</a></li>
+                <li><a href="#redes">./REDES</a></li>
+                <li><a href="#so">./SISTEMA_OP</a></li>
+                <li><a href="#chatbot-section">./ASISTENTE_IA</a></li>
+            </ul>
+        </nav>
+
+        <!-- SECCIÓN: HISTORIA -->
+        <section id="historia" class="content-section">
+            <h2>[ 01 ] Historia de las Computadoras</h2>
+            <p>
+                La historia de la computación es el viaje de herramientas simples para contar hasta las máquinas digitales complejas de hoy. Todo comenzó con dispositivos mecánicos como el <strong>ábaco</strong>. En el siglo XIX, <strong>Charles Babbage</strong> diseñó la "Máquina Analítica", considerada el ancestro de la computadora moderna.
+            </p>
+            <p>
+                El gran salto ocurrió en el siglo XX con la <strong>Segunda Guerra Mundial</strong>. Se crearon máquinas gigantes como la <strong>ENIAC</strong> (1946), que usaban válvulas de vacío y ocupaban habitaciones enteras. Con el tiempo, las válvulas fueron reemplazadas por transistores, y luego por circuitos integrados (chips), haciendo que las computadoras se hicieran más pequeñas, rápidas y baratas.
+            </p>
+            <p>
+                En los años 70 y 80 nació la <strong>computadora personal</strong>, liderada por empresas como Apple e IBM, llevando la tecnología de los laboratorios a nuestros hogares.
+            </p>
+        </section>
+
+        <!-- SECCIÓN: ARQUITECTURA -->
+        <section id="arquitectura" class="content-section">
+            <h2>[ 02 ] Arquitectura de Computadoras</h2>
+            <p>
+                La arquitectura de computadoras es como el diseño del esqueleto y el cerebro de la máquina. El modelo más famoso es la <strong>Arquitectura de Von Neumann</strong>, que sigue siendo la base de la mayoría de las computadoras actuales.
+            </p>
+            <p>
+                Esta arquitectura se compone principalmente de cuatro partes:
+            </p>
+            <ul style="margin-left: 2rem; margin-bottom: 1.5rem; list-style-type: square;">
+                <li><strong>CPU (Unidad Central de Procesamiento):</strong> El cerebro que ejecuta instrucciones.</li>
+                <li><strong>Memoria Principal (RAM):</strong> Donde se guardan los datos temporalmente mientras se usan.</li>
+                <li><strong>Entrada/Salida:</strong> Teclados, ratones, pantallas y discos para introducir o ver información.</li>
+                <li><strong>Bus de Datos:</strong> Los "cables" internos que conectan todo.</li>
+            </ul>
+            <p>
+                Básicamente, la computadora recibe datos (entrada), los procesa (CPU) y devuelve un resultado (salida).
+            </p>
+        </section>
+
+        <!-- SECCIÓN: BASES DE DATOS -->
+        <section id="basedatos" class="content-section">
+            <h2>[ 03 ] Bases de Datos</h2>
+            <p>
+                Imagina una inmensa biblioteca digital sin orden: encontrar un libro sería imposible. Una <strong>Base de Datos</strong> es un conjunto organizado de información que permite almacenar, modificar y consultar datos de forma eficiente.
+            </p>
+            <p>
+                En lugar de archivar papeles en carpetas físicas, usamos software especializado llamado <strong>Sistema Gestor de Bases de Datos (DBMS)</strong>. Hoy en día, la mayoría de las bases de datos son <strong>relacionales</strong>, lo que significa que organizan la información en tablas (como en Excel) que se conectan entre sí mediante "claves".
+            </p>
+            <p>
+                Esto permite que, cuando buscas tu perfil en una red social, la computadora encuentre tu nombre, tu foto y tus amigos en milésimas de segundo.
+            </p>
+        </section>
+
+        <!-- SECCIÓN: REDES -->
+        <section id="redes" class="content-section">
+            <h2>[ 04 ] Redes de Computadoras</h2>
+            <p>
+                Una red de computadoras es simplemente dos o más computadoras conectadas para compartir recursos (impresoras, archivos, internet). Las más pequeñas son las <strong>LAN</strong> (Red de Área Local), como la que usas en casa o en una oficina.
+            </p>
+            <p>
+                Cuando estas redes se conectan a nivel global, forman la <strong>WAN</strong> (Red de Área Amplia). La WAN más grande del mundo es <strong>Internet</strong>.
+            </p>
+            <p>
+                Para que las computadoras se entiendan, siguen un conjunto de reglas llamado <strong>Protocolo</strong>. El más famoso es TCP/IP, que funciona como el idioma universal que permite que tu mensaje llegue desde tu teléfono hasta un servidor al otro lado del mundo.
+            </p>
+        </section>
+
+        <!-- SECCIÓN: SISTEMAS OPERATIVOS -->
+        <section id="so" class="content-section">
+            <h2>[ 05 ] Sistemas Operativos</h2>
+            <p>
+                Si la computadora es el hardware (la parte física), el <strong>Sistema Operativo (OS)</strong> es el software que lo hace funcionar. Es el conductor orquestando todos los componentes. Sin él, la computadora sería solo un montón de metal y plástico sin vida.
+            </p>
+            <p>
+                El sistema operativo gestiona la memoria, controla los periféricos (teclado, mouse) y decide qué programas pueden correr y cuándo. Permite a los humanos interactuar con la máquina mediante una interfaz (gráfica con ventanas, o de texto con comandos).
+            </p>
+            <p>
+                Ejemplos famosos incluyen <strong>Unix</strong> (el padre de muchos sistemas), <strong>Windows</strong>, <strong>macOS</strong> y <strong>Linux</strong>.
+            </p>
+        </section>
+
+        <!-- SECCIÓN: CHATBOT INTERACTIVO -->
+        <section id="chatbot-section">
+            <div class="chat-header">
+                <span>TERMINAL_INTERACTIVA.exe</span>
+                <span>[X]</span>
+            </div>
+            <div class="chat-window" id="chat-display">
+                <div class="chat-msg msg-system">> Inicializando sistema de asistencia...</div>
+                <div class="chat-msg msg-system">> Conexión establecida.</div>
+                <div class="chat-msg msg-bot">Buenos dias, tardes o noches, Sobre que le gustaria aprender?</div>
+            </div>
+            <div class="chat-input-area">
+                <span style="color:var(--terminal-green)">></span>
+                <input type="text" id="chat-input" placeholder="Escribe aquí..." autocomplete="off">
+                <button id="send-btn">ENVIAR</button>
+            </div>
+        </section>
+
+        <footer>
+            <p>--- FIN DE LA TRANSMISIÓN ---</p>
+            <p style="margin-top: 1rem;">Fuentes consultadas para mayor profundización:</p>
+            <div class="reference-links">
+                <a href="https://es.wikipedia.org/wiki/Historia_de_las_computadoras_personales" target="_blank">> Wiki: Historia de las Computadoras Personales</a>
+                <a href="https://es.wikipedia.org/wiki/Arquitectura_de_computadoras" target="_blank">> Wiki: Arquitectura de Computadoras</a>
+                <a href="https://es.wikipedia.org/wiki/Base_de_datos" target="_blank">> Wiki: Base de Datos</a>
+                <a href="https://es.wikipedia.org/wiki/Red_de_computadoras" target="_blank">> Wiki: Red de Computadoras</a>
+                <a href="https://es.wikipedia.org/wiki/Sistema_operativo" target="_blank">> Wiki: Sistema Operativo</a>
+            </div>
+            <p style="margin-top: 2rem; font-size: 0.9rem;">© 2023 Archivo de Computación Retro. Todos los derechos reservados.</p>
+        </footer>
+
+    </main>
+
+    <script>
+        // --- LÓGICA DEL CHATBOT (TRADUCIDA DE C++ A JS) ---
+        
+        const chatInput = document.getElementById('chat-input');
+        const sendBtn = document.getElementById('send-btn');
+        const chatDisplay = document.getElementById('chat-display');
+
+        // Función para agregar mensajes al chat
+        function addMessage(text, sender) {
+            const msgDiv = document.createElement('div');
+            msgDiv.classList.add('chat-msg');
+            if (sender === 'user') {
+                msgDiv.classList.add('msg-user');
+                msgDiv.innerText = `Usuario: ${text}`;
+            } else if (sender === 'bot') {
+                msgDiv.classList.add('msg-bot');
+                msgDiv.innerHTML = `AI> `; // El contenido se añadirá con efecto de escritura
+                chatDisplay.appendChild(msgDiv);
+                typeWriterEffect(msgDiv, text); // Efecto de máquina de escribir
+                return; // Retornamos aquí porque typeWriter maneja la adición del texto
+            }
+            chatDisplay.appendChild(msgDiv);
+            scrollToBottom();
+        }
+
+        // Función para simular que la computadora escribe el texto
+        function typeWriterEffect(element, text) {
+            let i = 0;
+            const speed = 20; // Velocidad de escritura en ms
+            element.classList.add('typing-cursor'); // Cursor parpadeante mientras escribe
+
+            function type() {
+                if (i < text.length) {
+                    element.innerHTML += text.charAt(i);
+                    i++;
+                    scrollToBottom();
+                    setTimeout(type, speed);
+                } else {
+                    element.classList.remove('typing-cursor'); // Quitamos cursor al terminar
+                }
+            }
+            type();
+        }
+
+        // Auto-scroll al final
+        function scrollToBottom() {
+            chatDisplay.scrollTop = chatDisplay.scrollHeight;
+        }
+
+        // Función principal de procesamiento (Lógica del Usuario)
+        function processChat() {
+            const rawInput = chatInput.value;
+            const userInput = rawInput.trim();
+            
+            if (userInput === "") return;
+
+            // Mostrar mensaje del usuario
+            addMessage(userInput, 'user');
+            chatInput.value = "";
+
+            // Pequeño retardo para simular "pensamiento"
+            setTimeout(() => {
+                let botResponse = "";
+
+                // Traducción directa de la lógica if/else del código C++ proporcionado
+                // Usamos toLowerCase para que sea más fácil para el usuario (ignorar mayúsculas)
+                const inputLower = userInput.toLowerCase();
+
+                if (inputLower === "historia de la computadora") {
+                    botResponse = "El mundo de las computadoras personales empezo cuando los procesadores microinformaticos facilitaron el diseño de máquinas menos grandes y accesibles para la gente comun. Durante los años 70 y 80 hubo aparatos influyentes como la Altair 8800, la Apple II e la PC IBM, todos ellos contribuyeron a la adopcion de las computadoras en hogares y oficinas. Ademas, hubo avances significativos como el mouse y las interfaces graficas, desarrolladas por Xerox, que inspiraron sistemas como Windows y MacOS. Con el correr del tiempo, las computadoras se volvieron mas veloces, mas baratas y sencillas de utilizar, llegando incluso a ser un elemento crucial para los estudios, el trabajo y la comunicacion.";
+                } 
+                else if (inputLower === "arquitectura" || inputLower === "arquitectura de la computadora") {
+                    botResponse = "La arquitectura de computadoras se refiere a la forma en que estan estructurados y funcionan los componentes internos de una maquina de computacion, tales como el procesador, la memoria y dispositivos de acceso. Definen como una computadora manipula datos, ejecuta sentencias y establece contacto con otros sistemas. Esto tambien comprende el diseño del hardware y el comportamiento del software con respecto a ello. Por medio de la arquitectura de computadoras, los sistemas pueden cumplir con sus obligaciones con rapidez y eficiencia de acuerdo con su potencia y diseño.";
+                } 
+                else if (inputLower === "base de datos" || inputLower === "datos") {
+                    botResponse = "Una base de datos se considera un sistema destinado a mantener, estructurar e indexar informacion para facilitar su acceso y uso con facilidad. Las bases de datos juegan un papel crucial en el ámbito de la informática gracias a su capacidad de conservar una gran cantidad de datos tales como informacion de usuarios, productos o registros de una compañia. Son generalmente administradas por programas conocidos como sistemas gestores de bases de datos, los que se encargan de añadir, modificar, buscar y proteger la información de manera eficiente.";
+                } 
+                else if (inputLower === "redes" || inputLower === "redes de computadoras") {
+                    botResponse = "Una red de computadoras es un conjunto de sistemas conectados para compartir informacion, recursos y servicios, como archivos, impresoras o acceso a Internet. Podemos encontrar estas redes de diferentes tamaños: pueden ser pequeñas, como en la casa o la oficina, o grandes, como Internet. La funcionalidad de una red se fundamenta en dispositivos y reglas de comunicacion que aseguran que los datos se transfieran ordenadamente y de forma segura desde un equipo a otro. Las redes facilitan que las personas se comunicen y trabajen con mayor agilidad e eficiencia en ubicaciones dispares.";
+                } 
+                else if (inputLower === "sistemas operativos" || inputLower === "sistemas") {
+                    botResponse = "Un sistema operativo es el programa principal de una computadora que administra el hardware y permite a un usuario utilizarla de manera cómoda. Su tarea es coordinar los recursos del sistema, como memoria, procesador y dispositivos conectados, ademas de permitir la ejecucion de otras aplicaciones, por ejemplo navegadores o juegos. Algunos sistemas operativos bien conocidos son Windows, macOS y Linux. En resumen, el sistema operativo es la cuestion fundamental que permite que la computadora funcione eficazmente y util para el usuario.";
+                } 
+                else {
+                    botResponse = "Lo siento, no entendi tu mensaje. Por favor intenta preguntar sobre: Historia de la computadora, Arquitectura, Base de datos, Redes o Sistemas operativos.";
+                }
+
+                addMessage(botResponse, 'bot');
+            }, 500);
+        }
+
+        // Event Listeners
+        sendBtn.addEventListener('click', processChat);
+        
+        chatInput.addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                processChat();
+            }
+        });
+
+        // Foco inicial en el input al cargar
+        window.onload = function() {
+            chatInput.focus();
+        };
+    </script>
+</body>
+</html>
